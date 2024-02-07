@@ -1,0 +1,16 @@
+body {
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body,
+#map {
+    height: 100%;
+}
+
+
+.maplibregl-popup-content {
+    border-radius: 10px;
+  }
+  

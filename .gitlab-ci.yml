@@ -3,8 +3,9 @@ image: busybox
 pages:
   stage: deploy
   script:
-    - mkdir public
-    - cp -r * public/
+    - mkdir .public
+    - cp -r * .public/
+    - mv .public public
     - echo "The site will be deployed to $CI_PAGES_URL"
   artifacts:
     paths:

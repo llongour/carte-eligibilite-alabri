@@ -126,7 +126,7 @@ const bounds = [
 
 const map = new maplibregl.Map({
   container: "map",
-  style: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
+  style: "https://tileserver.metrotopic.net/styles/ems/style.json",
   minZoom: 10,
   center: [7.7254, 48.5798],
   hash: true,

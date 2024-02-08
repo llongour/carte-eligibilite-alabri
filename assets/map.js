@@ -180,7 +180,7 @@ map.on("load", () => {
   );
 
   map.addControl(new maplibregl.FullscreenControl());
-  map.addControl(new mapboxgl.NavigationControl());
+  map.addControl(new maplibregl.NavigationControl());
 });
 
 map.on("click", function (e) {

@@ -136,7 +136,7 @@ const map = new maplibregl.Map({
 map.on("load", () => {
   map.addSource("masque", {
     type: "geojson",
-    data: "masque.geojson",
+    data: "assets/masque.geojson",
   });
 
   map.addLayer({

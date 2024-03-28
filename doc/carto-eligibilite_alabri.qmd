@@ -1,0 +1,262 @@
+---
+title: "Création d'un outil de détermination de l'éligibilité d'une parcelle au diagnostic ALABRI"
+author:
+  - name: Département Atelier de Géomatique
+    affiliations:
+      - name: Ville et Eurométropole de Strasbourg - Service Géomatique et connaissance du territoire
+abstract: |
+  Ce document montre comment réaliser des géotraitements avancés en JavaScript à partir de plusieurs données géospatiales issues d'OpenDataSoft.
+keywords: 
+  - JavaScript
+  - OpenDataSoft
+date: today
+date-format: long
+toc: true
+lang: fr
+title-block-banner: "#94b90d"
+license: "Licence Ouverte version 2.0"
+reference-location: margin
+citation-location: margin
+---
+
+* [les zones exposées aux inondation par remontée de nappe au sein de l'Eurométropole](https://data.strasbourg.eu/explore/dataset/ppri-zonage-rn/information/) (où l'on ne considérera inondable que les zones vertes et vertes claires),
+* [les zones exposées aux inondation par débordement au sein de l'Eurométropole](https://data.strasbourg.eu/explore/dataset/ppri-zonage-ipd/information/),
+* [les zones exposées aux inondation par débordement au sein de la Bruche](https://data.strasbourg.eu/explore/dataset/ppri_bruche_ipd_zonage/information/),
+* [les zones exposées à des coulées d'eaux boueuses](https://data.strasbourg.eu/explore/dataset/coulees-eaux-boueuses/information/)
+
+Mais également deux autres couches:
+
+* le masque d'emprise de l'Eurométropole pour ne pas effectuer d'estimation hors de l'emprise de l'Eurométropole,
+* le perimètre du PAPI [^1] Zorn, que l'on utilisera pour indiquer à l'utilisateur que cette emprise est gérée par le SDEA [^2], dans le cadre de l'[opération pieds au sec](https://www.sdea.fr/index.php/fr/les-services/conseil/j-agis-en-cas-d-inondation/je-fais-diagnostiquer-la-vulnerabilite-de-mon-habitation)
+
+[^1]: Programme d'actions de prévention des inondations
+[^2]: Syndicat des Eaux et de l'Assainissement Alsace-Moselle
+
+```{ojs}
+//| echo: true
+carteinteractive = {
+  const container = yield html`<div style="height:400px;">`;
+  const carteinteractive = (container.value = new maplibregl.Map({
+    boxZoom: true,
+    pitch: 0,
+    bearing: 0,
+    maplibreLogo: true,
+    container,
+    center: [7.7254, 48.5798],
+    zoom: 12,
+    style: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
+    scrollZoom: true
+  }));
+  invalidation.then(() => carteinteractive.remove());
+
+  carteinteractive.addControl(new maplibregl.NavigationControl());
+
+  let marker = new maplibregl.Marker()
+    .setLngLat([7.72249, 48.5581])
+    .addTo(carteinteractive);
+  
+  carteinteractive.on('click', (e) => {
+  // Arrondir les coordonnées a 4 chiffres après la virgule
+  const roundedLng = parseFloat(e.lngLat.lng.toFixed(4));
+  const roundedLat = parseFloat(e.lngLat.lat.toFixed(4));
+
+  // Definir la position du marqueur aux coordonnees arrondies
+  marker.setLngLat([roundedLng, roundedLat]);
+
+  // Mettre a jour les coordonnées cliquees avec les valeurs arrondies
+  mutable clickedCoordinates = {
+    lng: roundedLng,
+    lat: roundedLat
+  };
+});
+
+  return carteinteractive;
+}
+
+mutable clickedCoordinates = null;
+```
+
+```{ojs}
+function markerCoordinates() {
+  if (clickedCoordinates == null) {
+    return { lng: 7.7224, lat: 48.5580 };
+  } else {
+    return clickedCoordinates;
+  }
+}
+```
+
+```{ojs}
+//| output: all
+markerCoord = markerCoordinates(clickedCoordinates)
+```
+
+## Récupération de la parcelle
+
+On récupère la géométrie et l'identifiant de la parcelle avec la fonction dédiée
+
+```{ojs}
+//| output: all
+parcelle = recupererParcelle(markerCoord.lat, markerCoord.lng);
+```
+
+```{ojs}
+//| code-fold: true
+{
+  const container = yield htl.html`<div style="height: 500px;">`;
+  const map = L.map(container);
+  const layer = L.geoJSON(parcelle.geo_shape).addTo(map);
+  map.fitBounds(layer.getBounds(), {maxZoom: 17});
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "© <a href=https://www.openstreetmap.org/copyright>OpenStreetMap</a> contributors"
+  }).addTo(map);
+}
+```
+
+## Gestion de la détection des aléas
+
+### Principe général
+
+::: {.callout-note}
+Pour cet exemple on considère la donnée [PPRi Eurométropole de Strasbourg – Inondation par remontée de nappe (zonage)](https://data.strasbourg.eu/explore/dataset/ppri-zonage-rn/information/)
+:::
+
+
+En utilisant la fonction `bboxToOdsPolygon`, on transforme la géométrie de la parcelle en une chaîne de caractères lisible par l'API d'OpenDataSoft.
+
+```{ojs}
+//| output: all
+polygon = bboxToOdsPolygon(turf.bbox(parcelle.geo_shape));
+```
+
+On concatène le résultat à l'url de l'API.
+
+```{ojs}
+//| output: all
+emsRnEmsApiUrl = `https://data.strasbourg.eu/api/records/1.0/search/?dataset=ppri-zonage-rn&q=&geofilter.polygon=${polygon}`
+```
+
+On récupère la géométrie de l'aléa (où l'on ne garde que les zones vertes et vertes claires).
+
+```{ojs}
+//| output: all
+geometrieRnEms = fetch(emsRnEmsApiUrl)
+  .then((response) => response.json())
+  .then((data) => {
+    const filteredRecords = data.records.filter((record) => {
+      return record.fields.nom === "Zone verte" || record.fields.nom === "Zone vert clair";
+    });
+    const geometries = filteredRecords.map(record => record.fields.geo_shape)
+    const clippedGeometries = geo.clip(geometries, { clip: parcelle.geo_shape })
+    const booleanIntersectResult = turf.booleanIntersects({ type: 'FeatureCollection', features:  clippedGeometries}, parcelle.geo_shape)
+    return clippedGeometries;
+  })
+```
+
+```{ojs}
+//| code-fold: true
+{
+  const container = yield htl.html`<div style="height: 500px;">`;
+  const map = L.map(container);
+  const layer = L.geoJSON(geometrieRnEms).addTo(map);
+  map.fitBounds(layer.getBounds(), {maxZoom: 17});
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "© <a href=https://www.openstreetmap.org/copyright>OpenStreetMap</a> contributors"
+  }).addTo(map);
+}
+```
+
+On vérifie si la parcelle touche bien la zone.
+
+```{ojs}
+//| output: all
+contact = turf.booleanIntersects(geometrieRnEms, parcelle.geo_shape);
+```
+
+### Généralisation
+
+```{ojs}
+async function verifIntersection(parcelle, alea) {
+  const polygon = bboxToOdsPolygon(turf.bbox(parcelle.geo_shape));
+  const url = `https://data.strasbourg.eu/api/records/1.0/search/?dataset=${alea}&q=&geofilter.polygon=${polygon}`;
+
+  try {
+    const response = await fetch(url);
+    const data = await response.json();
+
+    // Suppression du filtrage par nom pour retourner toutes les géométries
+    const geometries = data.records.map(record => record.fields.geo_shape);
+
+    const clippedGeometries = geo.clip(geometries, { clip: parcelle.geo_shape });
+
+    const touch = turf.booleanIntersects(clippedGeometries, parcelle.geo_shape);
+
+    return touch;
+  } catch (error) {
+    console.error('Error fetching or processing data:', error);
+    throw error; // Rethrow to let caller handle or be aware of the failure.
+  } 
+}
+verifIntersection(parcelle, "ppri-zonage-rn")
+```
+
+
+```{ojs}
+verifIntersection(parcelle, "coulees-eaux-boueuses")
+```
+
+## Fonctions {.unnumbered}
+
+```{ojs}
+function recupererParcelle(lat, lng) {
+  const cadApiUrl = `https://data.strasbourg.eu/api/records/1.0/search/?dataset=parcelles_cadastrales&q=&geofilter.distance=${lat}%2C${lng}%2C1`;
+
+  return fetch(cadApiUrl)
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.records && data.records.length > 0) {
+        const parcelleId = data.records[0].fields.id_parcellaire;
+        const parcelleGeo = data.records[0].fields.geo_shape;
+        return { id_parcellaire: parcelleId, geo_shape: parcelleGeo };
+      } else {
+        return "N/A";
+      }
+    })
+    .catch((error) => {
+      console.error(
+        "Une erreur s'est produite lors de la récupération des données du cadastre :",
+        error
+      );
+      return "N/A";
+    });
+}
+```
+
+```{ojs}
+function bboxToOdsPolygon(bbox) {
+    // Extraction des coordonnées depuis la bbox
+    const [minLng, minLat, maxLng, maxLat] = bbox;
+    
+    // Creation de points
+    const topLeft = [maxLat, minLng];
+    const topRight = [maxLat, maxLng];
+    const bottomRight = [minLat, maxLng];
+    const bottomLeft = [minLat, minLng];
+    
+    // Construction de la chaine
+    const polygon = `(${topLeft[0]}, ${topLeft[1]}), (${topRight[0]}, ${topRight[1]}), (${bottomRight[0]}, ${bottomRight[1]}), (${bottomLeft[0]}, ${bottomLeft[1]})`;
+    
+    return polygon;
+}
+```
+
+## Librairies {.unnumbered}
+
+```{ojs}
+turf = require('@turf/turf');
+maplibregl = require("maplibre-gl@3.3.1")
+html`<link href="https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.css" rel="stylesheet" />`
+geo = require("geotoolbox@2")
+leaflet = require('leaflet@1.9.4')
+html`<link href='${resolve('leaflet@1.9.4/dist/leaflet.css')}' rel='stylesheet' />`
+```

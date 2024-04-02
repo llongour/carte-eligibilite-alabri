@@ -181,7 +181,7 @@ map.on("load", () => {
   );
 
   map.addControl(new maplibregl.FullscreenControl());
-  map.addControl(new maplibregl.NavigationControl());
+  map.addControl(new maplibregl.NavigationControl({ showCompass: false }));
 });
 
 map.on("click", function (e) {

@@ -87,28 +87,24 @@ const geocoderApi = {
   forwardGeocode: async (config) => {
     const features = [];
     try {
-      const request = `https://nominatim.openstreetmap.org/search?q=${config.query}&format=geojson&polygon_geojson=1&addressdetails=1`;
+      const request = `https://api-adresse.data.gouv.fr/search/?q=${config.query}&limit=1`;
       const response = await fetch(request);
-      const geojson = await response.json();
-      for (const feature of geojson.features) {
-        const center = [
-          feature.bbox[0] + (feature.bbox[2] - feature.bbox[0]) / 2,
-          feature.bbox[1] + (feature.bbox[3] - feature.bbox[1]) / 2,
-        ];
-        const point = {
-          type: "Feature",
-          geometry: {
-            type: "Point",
-            coordinates: center,
-          },
-          place_name: feature.properties.display_name,
-          properties: feature.properties,
-          text: feature.properties.display_name,
-          place_type: ["place"],
-          center,
-        };
-        features.push(point);
-      }
+      const data = await response.json();
+      // Assuming the first result is the most relevant
+      const result = data.features[0];
+      const point = {
+        type: "Feature",
+        geometry: {
+          type: "Point",
+          coordinates: [result.geometry.coordinates[0], result.geometry.coordinates[1]],
+        },
+        place_name: result.properties.label,
+        properties: result.properties,
+        text: result.properties.label,
+        place_type: ["place"],
+        center: [result.geometry.coordinates[0], result.geometry.coordinates[1]],
+      };
+      features.push(point);
     } catch (e) {
       console.error(`Failed to forwardGeocode with error: ${e}`);
     }

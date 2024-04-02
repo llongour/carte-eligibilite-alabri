@@ -145,6 +145,21 @@ map.on("load", () => {
     },
   });
 
+  map.addSource("papizorn", {
+    type: "geojson",
+    data: "assets/papi_zorn.geojson",
+  });
+
+  map.addLayer({
+    id: "papizorn-layer",
+    type: "fill",
+    source: "papizorn",
+    paint: {
+      "fill-color": "orange",
+      "fill-opacity": 0,
+    },
+  });
+
   map.addSource("parcel-source", {
     type: "geojson",
     data: { type: "FeatureCollection", features: [] },
@@ -180,15 +195,27 @@ map.on("load", () => {
 });
 
 map.on("click", function (e) {
-  const features = map.queryRenderedFeatures(e.point, {
+  const featuresMasque  = map.queryRenderedFeatures(e.point, {
     layers: ["masque-layer"],
   });
 
-  if (features.length > 0) {
+  if (featuresMasque .length > 0) {
     return;
   }
 
+  const featuresPapiZorn = map.queryRenderedFeatures(e.point, {
+    layers: ["papizorn-layer"],
+  });
+
   var coordinates = e.lngLat;
+
+  if (featuresPapiZorn.length > 0) {
+    new maplibregl.Popup()
+      .setLngLat(coordinates)
+      .setHTML('<b>Zone non couverte</b> <br><a href="https://www.sdea.fr/index.php/fr/les-services/conseil/j-agis-en-cas-d-inondation/je-fais-diagnostiquer-la-vulnerabilite-de-mon-habitation" target="_blank">Consulter le dispositif du SDEA</a>')
+      .addTo(map);
+    return;
+  }
 
   const lat = coordinates.lat;
   const lon = coordinates.lng;
@@ -202,7 +229,6 @@ map.on("click", function (e) {
         const plainTextGeometry = geojsonGeometryToPlainText(
           parcelleData.geo_shape
         );
-        console.log("Plain Text Geometry:", plainTextGeometry);
       } else {
         console.log("No geometry data available.");
       }

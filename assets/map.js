@@ -83,38 +83,6 @@ function fetchParcelle(apiUrl) {
     });
 }
 
-const geocoderApi = {
-  forwardGeocode: async (config) => {
-    const features = [];
-    try {
-      const request = `https://api-adresse.data.gouv.fr/search/?q=${config.query}&limit=1`;
-      const response = await fetch(request);
-      const data = await response.json();
-      // Assuming the first result is the most relevant
-      const result = data.features[0];
-      const point = {
-        type: "Feature",
-        geometry: {
-          type: "Point",
-          coordinates: [result.geometry.coordinates[0], result.geometry.coordinates[1]],
-        },
-        place_name: result.properties.label,
-        properties: result.properties,
-        text: result.properties.label,
-        place_type: ["place"],
-        center: [result.geometry.coordinates[0], result.geometry.coordinates[1]],
-      };
-      features.push(point);
-    } catch (e) {
-      console.error(`Failed to forwardGeocode with error: ${e}`);
-    }
-
-    return {
-      features,
-    };
-  },
-};
-
 const bounds = [
   [7.1521, 48.109265],
   [8.344116, 48.9694],
@@ -122,7 +90,27 @@ const bounds = [
 
 const map = new maplibregl.Map({
   container: "map",
-  style: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
+  style: {
+    'version': 8,
+    'sources': {
+        'raster-tiles': {
+            'type': 'raster',
+            'tiles': [
+                'https://adict.strasbourg.eu/mapproxy/service?VERSION=1.1.0&1=2&SERVICE=WMS&REQUEST=GetMap&VERSION=1.1.1&LAYERS=monstrasbourg&STYLES=&FORMAT=image%2Fpng&TRANSPARENT=false&HEIGHT=256&WIDTH=256&SRS=EPSG%3A3857&BBOX={bbox-epsg-3857}'
+            ],
+            'tileSize': 256
+        }
+    },
+    'layers': [
+        {
+            'id': 'simple-tiles',
+            'type': 'raster',
+            'source': 'raster-tiles',
+            'minzoom': 0,
+            'maxzoom': 22
+        }
+    ]
+},
   minZoom: 10,
   center: [7.7254, 48.5798],
   hash: true,

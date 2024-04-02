@@ -117,6 +117,8 @@ const map = new maplibregl.Map({
   maxBounds: bounds,
 });
 
+map.dragRotate.disable();
+
 map.on("load", () => {
   map.addSource("masque", {
     type: "geojson",

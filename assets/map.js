@@ -202,35 +202,42 @@ map.on("click", function (e) {
   if (featuresPapiZorn.length > 0) {
     const lat = coordinates.lat;
     const lon = coordinates.lng;
+    const rnApiUrl = `https://data.strasbourg.eu/api/records/1.0/search/?dataset=ppri-zonage-rn&q=&geofilter.distance=${lat}%2C${lon}%2C1`;
+    const ipdApiUrl = `https://data.strasbourg.eu/api/records/1.0/search/?dataset=ppri-zonage-ipd&q=&geofilter.distance=${lat}%2C${lon}%2C1`;
     const cadApiUrl = `https://data.strasbourg.eu/api/records/1.0/search/?dataset=parcelles_cadastrales&q=&geofilter.distance=${lat}%2C${lon}%2C1`;
 
-    fetchParcelle(cadApiUrl)
-      .then((parcelleData) => {
-        if (parcelleData.geo_shape) {
-          const parcelleId = parcelleData.id_parcellaire
-            ? parcelleData.id_parcellaire
-            : "N/A";
-          const popupMessage = `<b>Votre bien n'est pas identifié en zone inondable</b><br>Parcelle : ${parcelleId}<br>Zone gérée par le SDEA<br><a href="https://www.sdea.fr/index.php/fr/les-services/conseil/j-agis-en-cas-d-inondation/je-fais-diagnostiquer-la-vulnerabilite-de-mon-habitation" target="_blank">Plus d\'informations sur l\'opération Pieds au sec</a>`;
-          
-          new maplibregl.Popup()
-            .setLngLat(coordinates)
-            .setHTML(popupMessage)
-            .addTo(map);
+    Promise.all([
+      fetchZonageRn(rnApiUrl),
+      fetchZonageIpd(ipdApiUrl),
+      fetchParcelle(cadApiUrl),
+    ]).then((results) => {
+      const eligible = results.includes(true);
+      const cadastreData = results[2];
+      const parcelleId = cadastreData.id_parcellaire
+        ? cadastreData.id_parcellaire
+        : "N/A";
+      const message = eligible
+        ? "<b>Votre bien est localisé en zone inondable</b>"
+        : "<b>Votre bien n'est pas identifié en zone inondable</b>";
+      let popupMessage = `${message}<br>Parcelle : ${parcelleId}`;
 
-          if (parcelleData.geo_shape) {
-            map.getSource("parcel-source").setData(parcelleData.geo_shape);
-          } else {
-            map
-              .getSource("parcel-source")
-              .setData({ type: "FeatureCollection", features: [] });
-          }
-        } else {
-          console.log("No geometry data available.");
-        }
-      })
-      .catch((error) => {
-        console.error("An error occurred while fetching parcelle data:", error);
-      });
+      if (eligible) {
+        popupMessage += `<br>Zone gérée par le SDEA<br><a href="https://www.strasbourg.eu/risque-inondation" target="_blank">Plus d'informations sur l'opération Pieds au sec</a>`;
+      }
+
+      new maplibregl.Popup()
+        .setLngLat(coordinates)
+        .setHTML(popupMessage)
+        .addTo(map);
+
+      if (cadastreData.geo_shape) {
+        map.getSource("parcel-source").setData(cadastreData.geo_shape);
+      } else {
+        map
+          .getSource("parcel-source")
+          .setData({ type: "FeatureCollection", features: [] });
+      }
+    });
 
     return;
   }
@@ -280,4 +287,3 @@ map.on("click", function (e) {
     }
   });
 });
-

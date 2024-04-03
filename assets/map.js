@@ -185,11 +185,11 @@ map.on("load", () => {
 });
 
 map.on("click", function (e) {
-  const featuresMasque  = map.queryRenderedFeatures(e.point, {
+  const featuresMasque = map.queryRenderedFeatures(e.point, {
     layers: ["masque-layer"],
   });
 
-  if (featuresMasque .length > 0) {
+  if (featuresMasque.length > 0) {
     return;
   }
 
@@ -200,10 +200,38 @@ map.on("click", function (e) {
   var coordinates = e.lngLat;
 
   if (featuresPapiZorn.length > 0) {
-    new maplibregl.Popup()
-      .setLngLat(coordinates)
-      .setHTML('<b>Zone non couverte</b> <br><a href="https://www.sdea.fr/index.php/fr/les-services/conseil/j-agis-en-cas-d-inondation/je-fais-diagnostiquer-la-vulnerabilite-de-mon-habitation" target="_blank">Consulter le dispositif du SDEA</a>')
-      .addTo(map);
+    const lat = coordinates.lat;
+    const lon = coordinates.lng;
+    const cadApiUrl = `https://data.strasbourg.eu/api/records/1.0/search/?dataset=parcelles_cadastrales&q=&geofilter.distance=${lat}%2C${lon}%2C1`;
+
+    fetchParcelle(cadApiUrl)
+      .then((parcelleData) => {
+        if (parcelleData.geo_shape) {
+          const parcelleId = parcelleData.id_parcellaire
+            ? parcelleData.id_parcellaire
+            : "N/A";
+          const popupMessage = `<b>Votre bien n'est pas identifié en zone inondable</b><br>Parcelle : ${parcelleId}<br>Zone gérée par le SDEA<br><a href="https://www.strasbourg.eu/risque-inondation" target="_blank">Plus d\'informations sur l\'opération Pieds au sec</a>`;
+          
+          new maplibregl.Popup()
+            .setLngLat(coordinates)
+            .setHTML(popupMessage)
+            .addTo(map);
+
+          if (parcelleData.geo_shape) {
+            map.getSource("parcel-source").setData(parcelleData.geo_shape);
+          } else {
+            map
+              .getSource("parcel-source")
+              .setData({ type: "FeatureCollection", features: [] });
+          }
+        } else {
+          console.log("No geometry data available.");
+        }
+      })
+      .catch((error) => {
+        console.error("An error occurred while fetching parcelle data:", error);
+      });
+
     return;
   }
 
@@ -212,20 +240,6 @@ map.on("click", function (e) {
   const rnApiUrl = `https://data.strasbourg.eu/api/records/1.0/search/?dataset=ppri-zonage-rn&q=&geofilter.distance=${lat}%2C${lon}%2C1`;
   const ipdApiUrl = `https://data.strasbourg.eu/api/records/1.0/search/?dataset=ppri-zonage-ipd&q=&geofilter.distance=${lat}%2C${lon}%2C1`;
   const cadApiUrl = `https://data.strasbourg.eu/api/records/1.0/search/?dataset=parcelles_cadastrales&q=&geofilter.distance=${lat}%2C${lon}%2C1`;
-
-  fetchParcelle(cadApiUrl)
-    .then((parcelleData) => {
-      if (parcelleData.geo_shape) {
-        const plainTextGeometry = geojsonGeometryToPlainText(
-          parcelleData.geo_shape
-        );
-      } else {
-        console.log("No geometry data available.");
-      }
-    })
-    .catch((error) => {
-      console.error("An error occurred while fetching parcelle data:", error);
-    });
 
   Promise.all([
     fetchZonageRn(rnApiUrl),
@@ -266,3 +280,4 @@ map.on("click", function (e) {
     }
   });
 });
+

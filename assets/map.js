@@ -210,7 +210,7 @@ map.on("click", function (e) {
           const parcelleId = parcelleData.id_parcellaire
             ? parcelleData.id_parcellaire
             : "N/A";
-          const popupMessage = `<b>Votre bien n'est pas identifié en zone inondable</b><br>Parcelle : ${parcelleId}<br>Zone gérée par le SDEA<br><a href="https://www.strasbourg.eu/risque-inondation" target="_blank">Plus d\'informations sur l\'opération Pieds au sec</a>`;
+          const popupMessage = `<b>Votre bien n'est pas identifié en zone inondable</b><br>Parcelle : ${parcelleId}<br>Zone gérée par le SDEA<br><a href="https://www.sdea.fr/index.php/fr/les-services/conseil/j-agis-en-cas-d-inondation/je-fais-diagnostiquer-la-vulnerabilite-de-mon-habitation" target="_blank">Plus d\'informations sur l\'opération Pieds au sec</a>`;
           
           new maplibregl.Popup()
             .setLngLat(coordinates)

@@ -111,7 +111,7 @@ map.on("load", () => {
     source: "masque",
     paint: {
       "fill-color": "grey",
-      "fill-opacity": 0.5,
+      "fill-opacity": 0,
     },
   });
 

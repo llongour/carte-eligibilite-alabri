@@ -90,27 +90,7 @@ const bounds = [
 
 const map = new maplibregl.Map({
   container: "map",
-  style: {
-    'version': 8,
-    'sources': {
-        'raster-tiles': {
-            'type': 'raster',
-            'tiles': [
-                'https://adict.strasbourg.eu/mapproxy/service?VERSION=1.1.0&1=2&SERVICE=WMS&REQUEST=GetMap&VERSION=1.1.1&LAYERS=monstrasbourg&STYLES=&FORMAT=image%2Fpng&TRANSPARENT=false&HEIGHT=256&WIDTH=256&SRS=EPSG%3A3857&BBOX={bbox-epsg-3857}'
-            ],
-            'tileSize': 256
-        }
-    },
-    'layers': [
-        {
-            'id': 'simple-tiles',
-            'type': 'raster',
-            'source': 'raster-tiles',
-            'minzoom': 0,
-            'maxzoom': 22
-        }
-    ]
-},
+  style: "https://tiles.lucaslongour.org/styles/alabri/style.json",
   minZoom: 10,
   center: [7.7254, 48.5798],
   hash: true,

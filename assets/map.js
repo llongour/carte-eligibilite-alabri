@@ -33,6 +33,27 @@ const fetchZonageBruche = (apiUrl) => {
     });
 };
 
+const fetchCEB = (apiUrl) => {
+  return fetch(apiUrl)
+    .then((response) => response.json())
+    .then((data) => {
+      if (
+        data.records.length > 0
+      ) {
+        return true;
+      } else {
+        return false;
+      }
+    })
+    .catch((error) => {
+      console.error(
+        "Une erreur s'est produite lors de la récupération des données JSON :",
+        error
+      );
+      return false;
+    });
+};
+
 
   
 
@@ -268,17 +289,19 @@ map.on("click", function (e) {
     const rnApiUrl = `https://data.strasbourg.eu/api/records/1.0/search/?dataset=ppri-zonage-rn&q=&geofilter.distance=${lat}%2C${lon}%2C1`;
     const ipdApiUrl = `https://data.strasbourg.eu/api/records/1.0/search/?dataset=ppri-zonage-ipd&q=&geofilter.distance=${lat}%2C${lon}%2C1`;
     const brucheIpdApiUrl = `https://data.strasbourg.eu/api/records/1.0/search/?dataset=ppri_bruche_ipd_zonage&q=&geofilter.distance=${lat},${lon}`;
+    const cebApiUrl = `https://data.strasbourg.eu/api/records/1.0/search/?dataset=coulees-eaux-boueuses&q=&geofilter.distance=${lat},${lon}`;
     const cadApiUrl = `https://data.strasbourg.eu/api/records/1.0/search/?dataset=parcelles_cadastrales&q=&geofilter.distance=${lat}%2C${lon}%2C1`;
 
     Promise.all([
       fetchZonageRn(rnApiUrl),
       fetchZonageIpd(ipdApiUrl),
       fetchZonageBruche(brucheIpdApiUrl),
+      fetchCEB(cebApiUrl),
       fetchParcelle(cadApiUrl)
     ]).then((results) => {
       console.log(results);
       const eligible = results.includes(true);
-      const cadastreData = results[3];
+      const cadastreData = results[4];
       const parcelleId = cadastreData.id_parcellaire
         ? cadastreData.id_parcellaire
         : "N/A";
@@ -313,16 +336,18 @@ map.on("click", function (e) {
   const rnApiUrl = `https://data.strasbourg.eu/api/records/1.0/search/?dataset=ppri-zonage-rn&q=&geofilter.distance=${lat}%2C${lon}%2C1`;
   const ipdApiUrl = `https://data.strasbourg.eu/api/records/1.0/search/?dataset=ppri-zonage-ipd&q=&geofilter.distance=${lat}%2C${lon}%2C1`;
   const brucheIpdApiUrl = `https://data.strasbourg.eu/api/records/1.0/search/?dataset=ppri_bruche_ipd_zonage&q=&geofilter.distance=${lat},${lon}`;
+  const cebApiUrl = `https://data.strasbourg.eu/api/records/1.0/search/?dataset=coulees-eaux-boueuses&q=&geofilter.distance=${lat},${lon}`;
   const cadApiUrl = `https://data.strasbourg.eu/api/records/1.0/search/?dataset=parcelles_cadastrales&q=&geofilter.distance=${lat}%2C${lon}%2C1`;
 
   Promise.all([
     fetchZonageRn(rnApiUrl),
     fetchZonageIpd(ipdApiUrl),
     fetchZonageBruche(brucheIpdApiUrl),
+    fetchCEB(cebApiUrl),
     fetchParcelle(cadApiUrl),
   ]).then((results) => {
     const eligible = results.includes(true);
-    const cadastreData = results[3];
+    const cadastreData = results[4];
     const parcelleId = cadastreData.id_parcellaire
       ? cadastreData.id_parcellaire
       : "N/A";

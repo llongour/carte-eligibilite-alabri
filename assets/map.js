@@ -99,7 +99,15 @@ const map = new maplibregl.Map({
                 'https://adict.strasbourg.eu/mapproxy/service?VERSION=1.1.0&1=2&SERVICE=WMS&REQUEST=GetMap&VERSION=1.1.1&LAYERS=monstrasbourg&STYLES=&FORMAT=image%2Fpng&TRANSPARENT=false&HEIGHT=256&WIDTH=256&SRS=EPSG%3A3857&BBOX={bbox-epsg-3857}'
             ],
             'tileSize': 256
-        }
+        },
+        "zonesinondables": {
+          "type": "vector",
+          "tiles": [
+              "https://tiles.lucaslongour.org/data/zonesinondables-vector/{z}/{x}/{y}.pbf"
+          ],
+          "maxzoom": 14
+      }
+      
     },
     'layers': [
         {
@@ -108,7 +116,19 @@ const map = new maplibregl.Map({
             'source': 'raster-tiles',
             'minzoom': 0,
             'maxzoom': 22
-        }
+        },
+        {
+          'id': 'zi',
+          'type': 'fill',
+          'source': 'zonesinondables',
+          "source-layer": "zi",
+          'minzoom': 0,
+          'maxzoom': 22,
+          paint: {
+            "fill-color": "blue",
+            "fill-opacity": 0.2,
+          }
+      }
     ]
 },
   minZoom: 10,

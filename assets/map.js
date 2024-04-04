@@ -106,7 +106,14 @@ const map = new maplibregl.Map({
               "https://tiles.lucaslongour.org/data/zonesinondables-vector/{z}/{x}/{y}.pbf"
           ],
           "maxzoom": 14
-      }
+      },
+      "couleeseauxboueuses": {
+        "type": "vector",
+        "tiles": [
+            "https://tiles.lucaslongour.org/data/couleeseauxboueuses-vector/{z}/{x}/{y}.pbf"
+        ],
+        "maxzoom": 14
+    }
       
     },
     'layers': [
@@ -125,10 +132,22 @@ const map = new maplibregl.Map({
           'minzoom': 0,
           'maxzoom': 22,
           paint: {
-            "fill-color": "blue",
+            "fill-color": "#1D31B8",
             "fill-opacity": 0.2,
           }
-      }
+      },
+      {
+        'id': 'ceb',
+        'type': 'fill',
+        'source': 'couleeseauxboueuses',
+        "source-layer": "couleeseauxboueuses",
+        'minzoom': 0,
+        'maxzoom': 22,
+        paint: {
+          "fill-color": "#582900",
+          "fill-opacity": 0.2,
+        }
+    }
     ]
 },
   minZoom: 10,

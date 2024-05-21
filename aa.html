@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Change the default position for attribution</title>
+    <meta property="og:description" content="Place attribution in the top-left position when initializing a map." />
+    <meta charset='utf-8'>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel='stylesheet' href='https://unpkg.com/maplibre-gl@4.3.2/dist/maplibre-gl.css' />
+    <script src='https://unpkg.com/maplibre-gl@4.3.2/dist/maplibre-gl.js'></script>
+    <script src="https://cdn.jsdelivr.net/npm/pmtiles@3.0.5/dist/pmtiles.js"></script>
+    <style>
+        body { margin: 0; padding: 0; }
+        html, body, #map { height: 100%; }
+    </style>
+</head>
+<body>
+<div id="map"></div>
+
+<script>
+    const protocol = new pmtiles.Protocol();
+    maplibregl.addProtocol("pmtiles",protocol.tile);
+    const map = new maplibregl.Map({
+        container: 'map',
+        style: {
+      'version': 8,
+      'sources': {
+          'raster-tiles': {
+              'type': 'raster',
+              'tiles': [
+                  'https://adict.strasbourg.eu/mapproxy/service?VERSION=1.1.0&1=2&SERVICE=WMS&REQUEST=GetMap&VERSION=1.1.1&LAYERS=monstrasbourg&STYLES=&FORMAT=image%2Fpng&TRANSPARENT=false&HEIGHT=256&WIDTH=256&SRS=EPSG%3A3857&BBOX={bbox-epsg-3857}'
+              ],
+              'tileSize': 256
+          }
+      },
+      'layers': [
+          {
+              'id': 'simple-tiles',
+              'type': 'raster',
+              'source': 'raster-tiles',
+              'minzoom': 0,
+              'maxzoom': 22
+          }
+      ]
+  },
+        center: [7.7512, 48.5810],
+      zoom: 13,
+    });
+    map.on("load", function () {
+
+      map.addSource("zonesinondables", {
+        type: "vector",
+        url: "pmtiles://https://ville-eurometropole-strasbourg.github.io/carte-eligibilite-alabri/assets/zonesinondables.pmtiles",
+        attribution: 'Eurométropole de Strasbourg'
+      })
+
+      map.addSource("couleeseauxboueuses", {
+        type: "vector",
+        url: "pmtiles://https://ville-eurometropole-strasbourg.github.io/carte-eligibilite-alabri/assets/coulees_eaux_boueuses.pmtiles",
+        attribution: 'Eurométropole de Strasbourg'
+      })
+
+      map.addLayer({
+        id: 'zonesinondables',
+        type: 'fill',
+        source: 'zonesinondables',
+            'source-layer': 'zi',
+        paint: {
+            "fill-color": "#1D31B8",
+            "fill-opacity": 0.2,
+        }
+      })
+
+      map.addLayer({
+        id: 'couleeseauxboueuses',
+        type: 'fill',
+        source: 'couleeseauxboueuses',
+            'source-layer': 'couleeseauxboueuses',
+        paint: {
+            "fill-color": "#582900",
+            "fill-opacity": 0.2,
+        }
+      })
+  
+  
+  
+    })
+</script>
+</body>
+</html>
